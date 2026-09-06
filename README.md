@@ -1,69 +1,57 @@
 # Regex Data Extraction & Secure Validation
 
-Pulls structured data (emails, credit card numbers, phone numbers, URLs) out
-of messy raw text using regex, validates it, and refuses to treat hostile or
-malformed input as real data.
+Pulls emails, credit card numbers, phone numbers and URLs out of raw text
+using regex, checks they're actually valid, and drops anything that looks
+like an attack instead of trying to process it.
 
-## How to run
+## Running it
 
-```bash
+```
 python3 src/main.py
 ```
 
-Reads `input/raw-text.txt`, prints a summary + masked results to the
-console, and writes the full structured output to
-`output/sample-output.json`.
+It reads `input/raw-text.txt`, prints the results (masked) to the console,
+and writes the full thing to `output/sample-output.json`. Just standard
+library, nothing to install.
 
-No dependencies beyond the Python standard library.
+## What it extracts
 
-## Data types extracted
+- Emails - also checks if it's an ALU address and tags it as `official`
+  (@alueducation.com), `alumni` (@alumni.alueducation.com) or `si`
+  (@si.alueducation.com)
+- Credit cards - matches Visa/Mastercard/Discover/Amex number shapes, then
+  runs a Luhn check so random digit strings that just look like a card
+  don't get counted
+- Phone numbers - Rwandan formats mostly (+250 7xx / 07x), plus a generic
+  (xxx) xxx-xxxx pattern
+- URLs - has to start with http:// or https://
 
-- **Emails** - general pattern, plus ALU-specific categorization into
-  `official` (`@alueducation.com`), `alumni`
-  (`@alumni.alueducation.com`), and `si` (`@si.alueducation.com`). Anything
-  else is left uncategorized (`null`).
-- **Credit card numbers** - Visa, Mastercard, Discover, and Amex number
-  shapes, then run through a **Luhn checksum** so a random 16-digit string
-  that merely looks like a card gets rejected.
-- **Phone numbers** - Rwandan formats (`+250 7xx xxx xxx`, `078...`) plus a
-  generic `(xxx) xxx-xxxx` fallback.
-- **URLs** - `http://` / `https://` links only (a bare domain like
-  `www.example.com` with no scheme is intentionally not treated as a URL,
-  since that's indistinguishable from plain text without more context).
+## Security stuff
 
-## Security handling
+The text is treated as untrusted since it's coming from an external API in
+the scenario. Before any extraction happens, every line gets checked
+against a list of patterns for things like script tags, SQL injection,
+path traversal, and prompt-injection style text ("ignore all previous
+instructions..."). If a line matches, it gets dropped completely and only
+a count is kept - the actual malicious text never gets printed or saved
+anywhere.
 
-The raw text is treated as untrusted, since in the real scenario it comes
-back from an external API.
+Credit cards also get run through Luhn validation, not just matched by
+shape. And both emails and card numbers get masked before they're ever
+printed or written to the output file, so the full values never show up in
+console logs or in the JSON.
 
-1. **Pre-filter pass** (`strip_hostile_lines`): before any extraction runs,
-   every line is checked against a list of patterns for script injection
-   (`<script`), SQL injection (`DROP TABLE`, `' OR '1'='1`), path traversal
-   (`../../`), and prompt-injection-style text (`ignore all previous
-   instructions`). Any matching line is dropped entirely and only a
-   **count** of blocked lines is recorded - the actual hostile text is
-   never printed, logged, or forwarded anywhere, so it can't do anything
-   downstream.
-2. **Luhn validation** on credit cards, not just a digit-shape match, so
-   junk that merely looks like a card number never gets reported as one.
-3. **Masking**: extracted emails and credit card numbers are masked
-   (`j*******a@alumni.alueducation.com`, `************6467`) before they
-   ever reach a `print()` call or the output JSON. The unmasked value only
-   ever exists transiently inside `extract()`.
-
-**Known limitation:** the hostile-line filter works per line. A multi-line
-injection attempt split across two lines (e.g. the trigger phrase on one
-line, the payload on the next) can have its second line pass through
-untouched - visible in the sample input/output, where
-`admin@internal-system.local` still gets extracted even though the line
-above it was blocked. A production version would need to buffer and scan
-in blocks/paragraphs, not single lines, to close that gap.
+One thing I noticed while testing: the filter works per line, so if
+someone splits an attack across two lines (trigger phrase on one line,
+payload on the next), the second line can slip through since it looks
+harmless on its own. You can actually see this in the sample output -
+`admin@internal-system.local` still gets picked up even though the line
+above it got blocked. Fixing that properly would mean scanning in blocks
+of text instead of single lines.
 
 ## Sample input
 
-`input/raw-text.txt` is a mock support-ticket export: real-looking ALU and
-personal emails, test credit card numbers, Rwandan and generic phone
-numbers, a few URLs, deliberately malformed data (double dots, wrong-length
-numbers, broken schemes), and several hostile-input attempts (script tag,
-SQL injection, path traversal, a fake "ignore previous instructions"
-prompt injection) mixed in among normal lines.
+`input/raw-text.txt` is a made-up support ticket export - fake ALU/personal
+emails, test credit card numbers, some Rwandan phone numbers, a few URLs,
+some intentionally broken/malformed data, and a handful of attack attempts
+mixed in to test that the filtering actually works.
