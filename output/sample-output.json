@@ -1,0 +1,77 @@
+{
+  "summary": {
+    "blocked_hostile_lines": 5,
+    "emails_found": 8,
+    "credit_cards_found": 4,
+    "phone_numbers_found": 5,
+    "urls_found": 3,
+    "alu_email_breakdown": {
+      "official": 2,
+      "alumni": 1,
+      "si": 1,
+      "other": 4
+    }
+  },
+  "results": {
+    "emails": [
+      {
+        "masked": "m***********a@alueducation.com",
+        "alu_category": "official"
+      },
+      {
+        "masked": "j*******a@alumni.alueducation.com",
+        "alu_category": "alumni"
+      },
+      {
+        "masked": "p***********r@si.alueducation.com",
+        "alu_category": "si"
+      },
+      {
+        "masked": "c***********7@gmail.com",
+        "alu_category": null
+      },
+      {
+        "masked": "j*************l@outlook.com",
+        "alu_category": null
+      },
+      {
+        "masked": "a***n@internal-system.local",
+        "alu_category": null
+      },
+      {
+        "masked": "r******k@alueducation.com",
+        "alu_category": "official"
+      },
+      {
+        "masked": "r********i@gmail.com",
+        "alu_category": null
+      }
+    ],
+    "credit_cards": [
+      {
+        "masked": "************6467"
+      },
+      {
+        "masked": "************0004"
+      },
+      {
+        "masked": "************9424"
+      },
+      {
+        "masked": "***********0005"
+      }
+    ],
+    "phone_numbers": [
+      "+250 788 123 456",
+      "078-555-2211",
+      "0733001122",
+      "+250-789-000-111",
+      "078 900 22 33"
+    ],
+    "urls": [
+      "https://shop.example.com/checkout?order=8842",
+      "http://payments.example.rw/pay",
+      "https://alueducation.com/students/portal"
+    ]
+  }
+}
